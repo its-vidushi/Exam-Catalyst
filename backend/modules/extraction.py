@@ -1,11 +1,24 @@
 import os
-
+import fitz
 
 def process_pdf_pipeline(file_path):
-    # TODO: Process page by page and run OCR for scanned PDFs, or extract text for text PDFs
+    # Extracts text from native PDFs page by page
     print(f"Routing to PDF Pipeline: {file_path}")
-    return "raw_text_from_pdf"
+    raw_text = ""
 
+    try:
+        doc = fitz.open(file_path)
+
+        for page in doc:
+            raw_text += page.get_text() + '\n'
+        
+        print(raw_text)
+        doc.close()
+        return raw_text
+    
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return ""
 def process_image_pipeline(file_path):
     # TODO: Preprocess the image first before running OCR
     print(f"Routing to Image Pipeline: {file_path}")
