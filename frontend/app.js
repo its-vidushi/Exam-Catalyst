@@ -24,7 +24,12 @@ async function uploadFiles() {
 
     const result = await response.json();
     console.log(result);
-    document.getElementById("status").innerText = result.message + "Check you terminal";
+    if (!response.ok) {
+      document.getElementById("status").innerText = `Upload failed: ${result.detail || result.message || JSON.stringify(result)}`;
+      return;
+    }
+
+    document.getElementById("status").innerText = result.message;
   } catch (error) {
     console.error(error)
     document.getElementById("status").innerText = "Error uploading files: \n" + error.message;
