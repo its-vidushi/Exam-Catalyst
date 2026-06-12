@@ -6,6 +6,8 @@ import cv2
 import pytesseract
 import numpy as np
 
+import re
+
 def process_pdf_pipeline(file_path):
     # Subrouter: detects if a PDF is text-based or scanned and proceses accordingly
     print(f"Checking PDF type for: {file_path}")
@@ -83,24 +85,24 @@ def process_image_pipeline(file_path):
         # Load image from temporary path
         image = cv2.imread(file_path)
 
+        image = cv2.resize(image, None, fx = 2, fy = 2, interpolation=cv2.INTER_CUBIC) # LARGER IMAGE
+
         # Preprocessing using OpenCV
-        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        _, preprocessed_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) # GRAYSCALE
+        blur = cv2.GaussianBlur(gray_image,(5, 5), 0) # BLUR TO SMOOTHEN THE NOISE
+        preprocessed_image = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 51, 13) 
 
         # Pytesseract OCR
         extracted_text = pytesseract.image_to_string(preprocessed_image)
         raw_text += extracted_text + '\n'
+        
+        return raw_text
 
     except Exception as e:
         print(f"Error processing image: {e}")
         return ""
 
 
-
-def clean_extracted_text(raw_text):
-    # TODO: Clean OCR noise like extra spaces, weird characters, and broken line breaks
-    print("Cleaning raw text...")
-    return "cleaned_text"
 
 # --- The Smart Router ---
 
@@ -113,7 +115,7 @@ def route_and_extract(file_path):
     raw_text = ""
     
     try:
-        # Idebtify file type using extension
+        # Identify file type using extension
         if extension == '.pdf':
             raw_text = process_pdf_pipeline(file_path)
         elif extension in ['.jpg', '.jpeg', '.png']:
@@ -121,10 +123,9 @@ def route_and_extract(file_path):
         else:
             raise ValueError(f"Unsupported file type: {extension}")
             
-        # Both pipelines produce raw extracted text, which is then cleaned
-        final_text = clean_extracted_text(raw_text)
+        # Both pipelines produce raw extracted text
         
-        return {"status": "success", "text": final_text}
+        return {"status": "success", "text": raw_text}
         
     except Exception as e:
         return {"status": "error", "message": str(e)}
